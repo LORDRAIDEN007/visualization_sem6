@@ -1,0 +1,133 @@
+
+/* Main container styles */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* Auth card styles */
+.auth-card {
+  max-width: 400px;
+  margin: 2rem auto;
+  padding: 2rem;
+}
+
+.auth-card h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+/* Form styles */
+.form-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #646cff;
+  box-shadow: 0 0 0 3px rgba(100, 108, 255, 0.2);
+}
+
+/* Button styles (extending from your existing styles) */
+.btn-primary {
+  width: 100%;
+  margin-top: 1rem;
+  font-weight: 500;
+}
+
+.btn-primary:disabled {
+  background-color: #93c5fd;
+  cursor: not-allowed;
+}
+
+/* Auth switch button */
+.auth-switch {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.switch-btn {
+  background: none;
+  border: none;
+  color: #646cff;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.switch-btn:hover {
+  color: #535bf2;
+  text-decoration: underline;
+}
+
+/* Dashboard styles */
+.dashboard {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Error message */
+.error-message {
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+/* Header and footer */
+header, footer {
+  margin: 2rem 0;
+}
+
+footer {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Media query for dark mode (based on your existing styles) */
+@media (prefers-color-scheme: dark) {
+  .auth-card {
+    background-color: #1a1a1a;
+  }
+  
+  .auth-card h2 {
+    color: rgba(255, 255, 255, 0.87);
+  }
+  
+  .form-group label {
+    color: #d1d5db;
+  }
+  
+  .form-group input {
+    background-color: #2a2a2a;
+    border-color: #3a3a3a;
+    color: rgba(255, 255, 255, 0.87);
+  }
+  
+  .error-message {
+    background-color: #7f1d1d;
+    color: #fecaca;
+  }
+}

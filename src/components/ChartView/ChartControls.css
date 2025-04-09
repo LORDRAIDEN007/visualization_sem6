@@ -1,0 +1,113 @@
+/* ChartControls.css */
+.chart-controls {
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e9ecef;
+  }
+  
+  .axis-selectors {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  
+  .axis-selectors > div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 180px;
+  }
+  
+  .axis-selectors label {
+    font-weight: 500;
+    font-size: 14px;
+    color: #495057;
+  }
+  
+  .axis-selectors select {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    background-color: white;
+    min-width: 180px;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  
+  .axis-selectors select:focus {
+    border-color: #80bdff;
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+  
+  .add-to-workspace-button {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 11px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s, transform 0.1s;
+    white-space: nowrap;
+    height: fit-content;
+    align-self: flex-end;
+    margin-left: 15px;
+    margin-bottom: 0.1rem;
+  }
+  
+  /* .add-to-workspace-button:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  } */
+  
+  .add-to-workspace-button:active {
+    transform: translateY(0);
+  }
+  
+  .toggle-workspace-button {
+    padding: 10px 16px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s;
+    font-size: 14px;
+    height: fit-content;
+    align-self: flex-end;
+    white-space: nowrap;
+  }
+  
+  .toggle-workspace-button:hover {
+    background-color: #e0e0e0;
+  }
+  
+  .toggle-workspace-button.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #0056b3;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .axis-selectors {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .axis-selectors > div {
+      width: 100%;
+    }
+    
+    .add-to-workspace-button,
+    .toggle-workspace-button {
+      width: 100%;
+      margin-top: 15px;
+      margin-left: 0;
+    }
+  }

@@ -1,0 +1,12 @@
+Date,Product,Category,Sales,Profit,Quantity
+2024-01-01,Laptop,Electronics,1200,300,1
+2024-01-02,Smartphone,Electronics,800,150,2
+2024-01-03,Headphones,Electronics,150,50,3
+2024-01-04,T-Shirt,Clothing,20,5,5
+2024-01-05,Shoes,Clothing,60,20,2
+2024-01-06,Washing Machine,Home Appliances,500,100,1
+2024-01-07,Refrigerator,Home Appliances,1000,200,1
+2024-01-08,Microwave,Home Appliances,250,50,1
+2024-01-09,Book,Education,15,5,3
+2024-01-10,Notebook,Education,5,2,10
+2024-01-11,Smartphone,Electronics,1200,300,1
