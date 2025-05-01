@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { isNumeric } from '../shared/utils';
 import { ChartComponents } from '../shared/constants';
 import './ChartControls.css';
@@ -27,6 +27,27 @@ const ChartControls = ({
   const [popupVisible, setPopupVisible] = useState(false);
   // Track recommendation attempts to detect when we've exhausted options
   const [recommendationAttempts, setRecommendationAttempts] = useState(0);
+  // Track available chart types based on selected axes
+  const [availableChartTypes, setAvailableChartTypes] = useState(Object.keys(ChartComponents));
+
+  // Update available chart types whenever axis selections change
+  useEffect(() => {
+    let newAvailableTypes = [...Object.keys(ChartComponents)];
+    
+    // If both X and Y are numeric, remove pie and doughnut charts from options
+    if (xAxis && yAxis && isNumeric(data[0]?.[xAxis]) && isNumeric(data[0]?.[yAxis])) {
+      newAvailableTypes = newAvailableTypes.filter(type => 
+        type !== 'pie' && type !== 'doughnut'
+      );
+    }
+    
+    setAvailableChartTypes(newAvailableTypes);
+    
+    // If current graph type is not in available types, reset it
+    if (graphType && !newAvailableTypes.includes(graphType)) {
+      setGraphType('bar'); // Default to bar chart as fallback
+    }
+  }, [xAxis, yAxis, data, graphType, setGraphType]);
 
   const handleXAxisChange = (e) => {
     const value = e.target.value;
@@ -100,6 +121,12 @@ const ChartControls = ({
         setRecommendationAttempts(0);
       }
       
+      // Add constraint information about pie/doughnut charts
+      const chartConstraints = `
+      IMPORTANT CONSTRAINTS:
+      - For pie or doughnut charts, the X-axis MUST be categorical (non-numeric).
+      - If both X and Y axes are numeric, DO NOT recommend pie or doughnut charts.`;
+      
       // Prepare data about current selections for the API
       const apiPayload = {
         model: "llama3-70b-8192",
@@ -113,6 +140,9 @@ const ChartControls = ({
             content: `I have a dataset with these columns: ${columns.join(', ')}. 
             Column types: ${JSON.stringify(columnTypes)}
             Sample data: ${JSON.stringify(sampleData)}. 
+            
+            ${chartConstraints}
+            
             Please recommend: 
             1. The best X-axis column
             2. The best Y-axis column (must be numeric if X is categorical)
@@ -165,6 +195,14 @@ const ChartControls = ({
         }
         if (newRecommendation.chartType && !Object.keys(ChartComponents).includes(newRecommendation.chartType)) {
           newRecommendation.chartType = null;
+        }
+        
+        // Additional validation for pie/doughnut charts
+        if ((newRecommendation.chartType === 'pie' || newRecommendation.chartType === 'doughnut') && 
+            newRecommendation.xAxis && isNumeric(data[0]?.[newRecommendation.xAxis])) {
+          // Invalid recommendation - pie/doughnut with numeric X-axis
+          // Try again or fallback to a different chart type
+          newRecommendation.chartType = 'bar';
         }
         
         // Check if this is a repeated recommendation
@@ -287,7 +325,8 @@ EXPLANATION: I've exhausted all meaningful chart recommendations for your datase
             value={graphType} 
             onChange={(e) => setGraphType(e.target.value)}
           >
-            {Object.keys(ChartComponents).map(type => (
+            {/* Only show chart types that are appropriate for the selected data */}
+            {availableChartTypes.map(type => (
               <option key={type} value={type}>
                 {type.charAt(0).toUpperCase() + type.slice(1)} Chart
               </option>
@@ -304,13 +343,7 @@ EXPLANATION: I've exhausted all meaningful chart recommendations for your datase
           {loading ? '' : 'Smart Chart Recommendations'}
         </button>
         
-        {/* Mini workspace toggle */}
-        <button 
-          className={`toggle-workspace-button ${workspaceVisible ? 'active' : ''}`}
-          onClick={() => setWorkspaceVisible(!workspaceVisible)}
-        >
-          {workspaceVisible ? 'Hide Workspace' : 'Show Workspace'}
-        </button>
+      
         
         {/* Add to Workspace button */}
         {xAxis && yAxis && (
@@ -364,6 +397,7 @@ EXPLANATION: I've exhausted all meaningful chart recommendations for your datase
           </div>
         </div>
       )}
+      
     </div>
   );
 };

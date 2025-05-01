@@ -50,10 +50,6 @@ const FilterLegend = ({
           
           return (
             <div key={column} className="legend-item">
-              <div 
-                className="color-box" 
-                style={{ backgroundColor: color }}
-              ></div>
               <div className="legend-text">
                 <strong>{column}:</strong> {filterDescription}
               </div>

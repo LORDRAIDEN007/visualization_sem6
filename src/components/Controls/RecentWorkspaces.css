@@ -1,0 +1,142 @@
+/* Add this to your CSS files or create a new one: src/components/Controls/RecentWorkspaces.css */
+
+.recent-workspaces-container {
+    width: 100%;
+  }
+  
+  .workspaces-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  
+  .workspace-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border: 1px solid #eaeaea;
+  }
+  
+  .workspace-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-color: #d0d0d0;
+  }
+  
+  .workspace-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 8px;
+  }
+  
+  .workspace-card-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 180px;
+  }
+  
+  .workspace-date {
+    font-size: 0.8rem;
+    color: #888;
+  }
+  
+  .workspace-card-content {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    margin-bottom: 16px;
+  }
+  
+  .workspace-stats {
+    margin-left: 15px;
+  }
+  
+  .workspace-stats span {
+    display: inline-block;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+    color: #555;
+  }
+  
+  .workspace-stats p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #666;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.4;
+  }
+  
+  .workspace-card-footer {
+    text-align: right;
+  }
+  
+  .delete-button {
+    background-color: transparent;
+    border: none;
+    color: #e53935;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+  }
+  
+  .delete-button:hover {
+    background-color: rgba(229, 57, 53, 0.1);
+  }
+  
+  .delete-button:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  .no-workspaces {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    border: 1px dashed #ddd;
+  }
+  
+  /* Loading indicator for when a workspace is being loaded */
+  .workspace-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    z-index: 2;
+  }

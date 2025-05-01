@@ -13,11 +13,13 @@ import {
   Tooltip,
   Legend
 } from 'chart.js'
+import zoomPlugin from 'chartjs-plugin-zoom' // Import the zoom plugin
 import '../../App.css' // Update path as needed
 import { supabase } from '../../supabase' // Import the Supabase client
 import FilterLegend from '../Controls/FilterLegend';
-import MiniWorkspace from '../Workspace/MiniWorkspace';
 import FullWorkspace from '../Workspace/FullWorkspace';
+// Add import to Dashboard.jsx
+import RecentWorkspaces from '../Controls/RecentWorkspaces';
 import { ChartComponents, COLOR_PALETTE, HIGHLIGHT_PALETTE, defaultChartOptions } from '../shared/constants';
 import {
   isNumeric,
@@ -35,6 +37,7 @@ import { useNavigate } from 'react-router-dom';
 import SimpleDataTable from '../TableView/SimpleDataTable';
 import RecentCharts from '../Controls/RecentCharts';
 
+// Register the zoom plugin with Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -45,7 +48,8 @@ ChartJS.register(
   RadialLinearScale,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  zoomPlugin // Register the zoom plugin
 )
 
 function Dashboard() {
@@ -63,7 +67,8 @@ function Dashboard() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' })
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef(null)
-  const [savedCharts, setSavedCharts] = useState([])
+  const [workspaceCharts, setWorkspaceCharts] = useState([]) // Charts added to workspace during session
+  const [savedCharts, setSavedCharts] = useState([]) // Charts loaded from database
   const [workspaceVisible, setWorkspaceVisible] = useState(false)
   const [filterColors, setFilterColors] = useState({});
   const { user, signOut } = useAuth();
@@ -73,12 +78,33 @@ function Dashboard() {
   const [recentCharts, setRecentCharts] = useState([]); // Store recent charts
   const [showAllCharts, setShowAllCharts] = useState(false); // Toggle between recent and all charts
   const [chartLoaded, setChartLoaded] = useState(false); // Track if a chart is loaded
+  const [dataLastUpdated, setDataLastUpdated] = useState(null); // Track when data was last updated
+  // Add this state to Dashboard component
+  const [recentWorkspaces, setRecentWorkspaces] = useState([]);
+  const [showAllWorkspaces, setShowAllWorkspaces] = useState(false);
 
   const handleLogout = async () => {
     await signOut();
     navigate('/');
   };
-
+  // Add this function to Dashboard component
+  const fetchWorkspaces = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('workspaces')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      setRecentWorkspaces(data || []);
+    } catch (err) {
+      console.error('Error fetching workspaces:', err);
+    }
+  };
   // Function to fetch saved charts
   const fetchSavedCharts = async () => {
     if (!user) return;
@@ -104,6 +130,7 @@ function Dashboard() {
   useEffect(() => {
     if (user) {
       fetchSavedCharts();
+      fetchWorkspaces();
     }
   }, [user]);
 
@@ -128,7 +155,7 @@ function Dashboard() {
         return null;
       }
   
-      // Get the public URL - fix is here
+      // Get the public URL
       const { data: urlData } = supabase
         .storage
         .from('csv-files')
@@ -139,14 +166,94 @@ function Dashboard() {
         return null;
       }
   
-      // Return the URL - note we're using publicUrl (lowercase 'u')
+      // Return the URL
       return urlData.publicUrl;
     } catch (err) {
       console.error('Exception during file upload:', err);
       return null;
     }
   };
+  // Add this function to Dashboard component
+// Update this function in your Dashboard.jsx component
+const loadWorkspaceFromSupabase = async (workspace) => {
+  try {
+    setLoading(true);
+    
+    // Fetch all charts for this workspace
+    const { data: chartsData, error: chartsError } = await supabase
+      .from('charts')
+      .select('*')
+      .in('id', workspace.chart_ids);
+      
+    if (chartsError) throw chartsError;
+    
+    if (!chartsData || chartsData.length === 0) {
+      throw new Error('No charts found for this workspace');
+    }
+    
+    // Fetch the CSV file for the first chart (assuming all charts use the same CSV)
+    const firstChart = chartsData[0];
+    setCsvFileUrl(firstChart.csv_file_url);
+    
+    // Parse the CSV data from the URL to actually load the data
+    try {
+      const response = await fetch(firstChart.csv_file_url);
+      const csvText = await response.text();
+      
+      Papa.parse(csvText, {
+        header: true,
+        dynamicTyping: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          // Insert row IDs for tracking
+          const dataWithIds = results.data.map((row, index) => ({
+            ...row,
+            __row_id: index
+          }));
 
+          // Set the data and columns
+          setData(dataWithIds);
+          if (results.data.length > 0) {
+            setColumns(Object.keys(results.data[0] || {}).filter(col => col !== '__row_id'));
+          }
+          
+          // Now load the workspace charts after data is ready
+          const loadedWorkspaceCharts = chartsData.map(chart => ({
+            id: chart.chart_id,
+            database_id: chart.id, // Save the database ID for later use
+            type: chart.chart_type,
+            xAxis: chart.x_axis,
+            yAxis: chart.y_axis,
+            data: JSON.parse(chart.chart_data),
+            title: chart.title,
+            filters: JSON.parse(chart.filters || '{}'),
+            lastUpdated: chart.created_at
+          }));
+          
+          setWorkspaceCharts(loadedWorkspaceCharts);
+          setWorkspaceVisible(true);
+          
+          // Switch to workspace view
+          setViewMode('workspace');
+          setChartLoaded(true);
+          setLoading(false);
+        },
+        error: (error) => {
+          console.error('Error parsing CSV:', error);
+          setLoading(false);
+          throw new Error(`Failed to parse CSV file: ${error.message}`);
+        }
+      });
+    } catch (csvError) {
+      console.error('Error fetching or parsing CSV:', csvError);
+      throw new Error(`Failed to load CSV data: ${csvError.message}`);
+    }
+  } catch (err) {
+    console.error('Error loading workspace:', err);
+    alert(`Failed to load workspace: ${err.message}`);
+    setLoading(false);
+  }
+};
   // For chart workspace functionality
   const loadChartFromWorkspace = (chart) => {
     // Set the view mode to chart if it's not already
@@ -163,11 +270,6 @@ function Dashboard() {
     if (chart.filters) {
       setColumnFilters(chart.filters);
     }
-  
-    // Keep the workspace visible
-    // Note: In your original code, this was hiding the workspace, but we'll keep it visible
-    // If you want to hide it, uncomment the next line
-    // setWorkspaceVisible(false);
   };
   
   const addChartToWorkspace = () => {
@@ -190,15 +292,16 @@ function Dashboard() {
       filterColors
     });
   
-    // Add only this chart to the workspace
-    setSavedCharts(prev => [...prev, {
+    // Add to workspaceCharts instead of savedCharts
+    setWorkspaceCharts(prev => [...prev, {
       id: chartId,
       type: graphType,
       xAxis,
       yAxis,
       data: chartData,
       title: `${yAxis} vs ${xAxis} (${graphType})`,
-      filters: { ...columnFilters }
+      filters: { ...columnFilters },
+      lastUpdated: new Date().toISOString()
     }]);
   
     // Show mini workspace if it's not already visible
@@ -226,10 +329,8 @@ function Dashboard() {
     setCsvFileUrl(loadedCsvUrl);
     setCurrentFileName(fileName);
     
-    // Reset the workspace state - we don't want to automatically add the loaded chart to the workspace
-    // Only add charts that the user explicitly adds via addChartToWorkspace
-    setSavedCharts([]);
-    setWorkspaceVisible(false);
+    // We don't automatically add the loaded chart to the workspace
+    // User needs to explicitly add it using addChartToWorkspace
     
     // Switch to chart view
     setViewMode('chart');
@@ -239,17 +340,56 @@ function Dashboard() {
   };
 
   const removeChartFromWorkspace = (chartId) => {
-    setSavedCharts(prev => prev.filter(chart => chart.id !== chartId))
+    setWorkspaceCharts(prev => prev.filter(chart => chart.id !== chartId));
 
     // Hide workspace if it's empty
-    if (savedCharts.length <= 1) {
-      setWorkspaceVisible(false)
+    if (workspaceCharts.length <= 1) {
+      setWorkspaceVisible(false);
     }
-  }
+  };
 
-  // Function to refresh the page
+  // Function to refresh chart data with the latest data
+  const refreshChartData = async (chart) => {
+    // Recalculate chart data using current dataset and settings
+    const updatedChartData = getChartData({
+      xAxis: chart.xAxis,
+      yAxis: chart.yAxis,
+      graphType: chart.type,
+      data,
+      filteredAndSortedData,
+      columnFilters: chart.filters || {},
+      filterColors
+    });
+
+    // Update the chart with new data
+    setWorkspaceCharts(prev => prev.map(c => 
+      c.id === chart.id 
+        ? {
+            ...c,
+            data: updatedChartData,
+            lastUpdated: new Date().toISOString()
+          }
+        : c
+    ));
+
+    return true;
+  };
+  const updateChartInWorkspace = (updatedChart) => {
+    // Create a new array with the updated chart
+    const updatedCharts = workspaceCharts.map(chart => 
+      chart.id === updatedChart.id ? updatedChart : chart
+    );
+    
+    // Update the state with the new array
+    setWorkspaceCharts(updatedCharts);
+    
+    // If you're saving charts to localStorage, update that too
+    saveChartsToLocalStorage(updatedCharts);
+  };
+  // Function to clear workspace and reload the page
   const handleExit = () => {
     // Clear all states before reloading
+    setWorkspaceCharts([]);
     setSavedCharts([]);
     setWorkspaceVisible(false);
     setData([]);
@@ -399,6 +539,13 @@ function Dashboard() {
           setLoading(false)
           setFilterColors({})
           setChartLoaded(true) // Hide recent charts section
+          
+          // Update data timestamp
+          setDataLastUpdated(new Date().toISOString())
+          
+          // Clear workspace when loading new data
+          setWorkspaceCharts([])
+          setWorkspaceVisible(false)
         },
         error: (error) => {
           console.error('Error parsing CSV:', error)
@@ -426,6 +573,9 @@ function Dashboard() {
           : row
       )
     )
+    
+    // Mark data as updated
+    setDataLastUpdated(new Date().toISOString())
   }
 
   const handleSaveCSV = () => {
@@ -478,27 +628,54 @@ function Dashboard() {
             <button
               onClick={handleExit}
               className="exit-button"
-              style={{
-                backgroundColor: '#f44336',
-                color: 'white',
-                marginLeft: '10px',
-                padding: '8px 16px',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
             >
               Exit
             </button>
             {currentFileName && (
               <div className="file-info">
-                <span>Current file: {currentFileName} </span>
+                <span>Current file: {currentFileName}</span>
               </div>
             )}
           </div>
         )}
       </div>
-      
+      {/* Add this section above the Recent Charts section in Dashboard.jsx */}
+{!chartLoaded && recentWorkspaces.length > 0 && (
+  <div className="recent-workspaces-section" style={{
+    margin: '20px 0',
+    padding: '15px',
+    backgroundColor: '#f5f8ff', // Slightly different shade from charts
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+      <h2 style={{ margin: '0', fontSize: '1.5rem', color: '#333' }}>
+        {showAllWorkspaces ? 'All Saved Workspaces' : 'Recent Workspaces'}
+      </h2>
+      <button
+        onClick={() => setShowAllWorkspaces(!showAllWorkspaces)}
+        style={{
+          backgroundColor: '#5c6bc0', // Different color from charts toggle
+          color: 'white',
+          border: 'none',
+          padding: '8px 16px',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontSize: '0.9rem'
+        }}
+      >
+        {showAllWorkspaces ? 'Show Recent Only' : 'View All'}
+      </button>
+    </div>
+    
+    <RecentWorkspaces
+      workspaces={showAllWorkspaces ? recentWorkspaces : recentWorkspaces.slice(0, 4)}
+      onLoadWorkspace={loadWorkspaceFromSupabase}
+      showAll={showAllWorkspaces}
+      onRefresh={fetchWorkspaces}
+    />
+  </div>
+)}
       {/* Recent Charts Section - visible only when no chart is loaded */}
       {!chartLoaded && recentCharts.length > 0 && (
         <div className="recent-charts-section" style={{
@@ -647,26 +824,16 @@ function Dashboard() {
             )}
           </div>
 
-          {/* Mini Workspace component */}
-          {(viewMode === 'chart' || viewMode === 'split') && (
-            <MiniWorkspace
-              workspaceVisible={workspaceVisible}
-              savedCharts={savedCharts}
-              setWorkspaceVisible={setWorkspaceVisible}
-              removeChartFromWorkspace={removeChartFromWorkspace}
-              loadChartFromWorkspace={loadChartFromWorkspace}
-              setViewMode={setViewMode}
-              csvFileUrl={csvFileUrl}
-            />
-          )}
-
           {/* Full Workspace View component */}
           {viewMode === 'workspace' && (
             <FullWorkspace
-              savedCharts={savedCharts}
+              workspaceCharts={workspaceCharts} // Pass workspaceCharts instead of savedCharts
               removeChartFromWorkspace={removeChartFromWorkspace}
               loadChartFromWorkspace={loadChartFromWorkspace}
               csvFileUrl={csvFileUrl}
+              dataLastUpdated={dataLastUpdated}
+              refreshChartData={refreshChartData}
+              updateChartInWorkspace={updateChartInWorkspace}
             />
           )}
         </>

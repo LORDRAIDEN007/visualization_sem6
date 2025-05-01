@@ -1,30 +1,57 @@
-// src/components/Controls/ViewToggle.js
-import React from 'react';
+import { useState, useEffect } from 'react';
 
 const ViewToggle = ({ viewMode, setViewMode }) => {
+  // Track if table has been initialized
+  const [tableInitialized, setTableInitialized] = useState(false);
+  
+  // When table view is shown, mark it as initialized
+  useEffect(() => {
+    if (viewMode === 'table') {
+      setTableInitialized(true);
+    }
+  }, [viewMode]);
+  
+  // Handle view mode change with table initialization check
+  const handleViewChange = (newMode) => {
+    // If switching to split view but table hasn't been initialized yet
+    if (newMode === 'split' && !tableInitialized) {
+      // Briefly show table view to initialize components
+      setViewMode('table');
+      // Then switch to split view after a short delay
+      setTimeout(() => {
+        setViewMode('split');
+      }, 100);
+      // Mark table as initialized
+      setTableInitialized(true);
+    } else {
+      // For all other cases, just set the view mode directly
+      setViewMode(newMode);
+    }
+  };
+
   return (
     <div className="view-toggles">
       <button 
         className={`toggle-button ${viewMode === 'chart' ? 'active' : ''}`}
-        onClick={() => setViewMode('chart')}
+        onClick={() => handleViewChange('chart')}
       >
         Chart View
       </button>
       <button 
         className={`toggle-button ${viewMode === 'table' ? 'active' : ''}`}
-        onClick={() => setViewMode('table')}
+        onClick={() => handleViewChange('table')}
       >
         Table View
       </button>
       <button 
         className={`toggle-button ${viewMode === 'split' ? 'active' : ''}`}
-        onClick={() => setViewMode('split')}
+        onClick={() => handleViewChange('split')}
       >
         Split View
       </button>
       <button 
         className={`toggle-button ${viewMode === 'workspace' ? 'active' : ''}`}
-        onClick={() => setViewMode('workspace')}
+        onClick={() => handleViewChange('workspace')}
       >
         Workspace View
       </button>
